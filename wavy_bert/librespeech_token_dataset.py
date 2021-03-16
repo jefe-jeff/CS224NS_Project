@@ -44,8 +44,8 @@ def load_librispeech_item(fileid: str,
     file_text = speaker_id + "-" + chapter_id + ext_txt
     file_text = os.path.join(path, speaker_id, chapter_id, file_text)
 
-    file_text_alignment = speaker_id + "-" + chapter_id + ".alignment.txt"
-    file_text_alignment = os.path.join(path, speaker_id, chapter_id, file_text_alignment)
+    #file_text_alignment = speaker_id + "-" + chapter_id + ".alignment.txt"
+    #file_text_alignment = os.path.join(path, speaker_id, chapter_id, file_text_alignment)
 
     fileid_audio = speaker_id + "-" + chapter_id + "-" + utterance_id
     file_audio = fileid_audio + ext_audio
@@ -56,6 +56,18 @@ def load_librispeech_item(fileid: str,
 
     # Load text
     with open(file_text) as ft:
+        
+        for line in ft:
+            fileid_text, utterance = line.strip().split(" ", 1)
+            fileid_text_align, utterance_align,  time_align= line_align.strip().split(" ", 2)
+            if fileid_audio == fileid_text:
+                break
+        else:
+            # Translation not found
+            raise FileNotFoundError("Translation not found for " + fileid_audio)
+
+    """
+    with open(file_text) as ft:
         with open(file_text_alignment) as fta:
             for line, line_align in zip(ft,fta):
                 fileid_text, utterance = line.strip().split(" ", 1)
@@ -65,17 +77,20 @@ def load_librispeech_item(fileid: str,
             else:
                 # Translation not found
                 raise FileNotFoundError("Translation not found for " + fileid_audio)
+    """
+    #time_alignment = Tensor(list(map(float, time_align[1:-1].split(","))))
+
     
-    time_alignment = Tensor(list(map(float, time_align[1:-1].split(","))))
+
     return (
-        waveform,
-        sample_rate,
-        utterance,
-        time_alignment,
-        int(speaker_id),
-        int(chapter_id),
-        int(utterance_id),
+        waveform.flatten(),
+        len(waveform.flatten()), 
+        utterance, 
+        len(utterance)
     )
+
+
+
 
 
 class librispeech_dataset(Dataset):
