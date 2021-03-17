@@ -8,6 +8,7 @@ from typing import Tuple, Union
 from pathlib import Path
 
 import torchaudio
+import librosa
 from torch import Tensor
 from torch.utils.data import Dataset
 from torchaudio.datasets.utils import (
@@ -52,14 +53,13 @@ def load_librispeech_item(fileid: str,
     file_audio = os.path.join(path, speaker_id, chapter_id, file_audio)
 
     # Load audio
-    waveform, sample_rate = torchaudio.load(file_audio)
+    waveform, sample_rate = librosa.load(file_audio)
 
     # Load text
     with open(file_text) as ft:
         
         for line in ft:
             fileid_text, utterance = line.strip().split(" ", 1)
-            fileid_text_align, utterance_align,  time_align= line_align.strip().split(" ", 2)
             if fileid_audio == fileid_text:
                 break
         else:
