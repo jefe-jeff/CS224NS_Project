@@ -15,6 +15,7 @@ from torchaudio.datasets.utils import (
     download_url,
     extract_archive,
 )
+from transformers import RobertaTokenizerFast
 
 URL = "train-clean-100"
 FOLDER_IN_ARCHIVE = "LibriSpeech"
@@ -36,7 +37,7 @@ _CHECKSUMS = {
 }
 
 
-def load_librispeech_item(fileid: str,
+def load_librispeech_item(tokenizer, fileid: str,
                           path: str,
                           ext_audio: str,
                           ext_txt: str) -> Tuple[Tensor, int, str, int, int, int]:
@@ -81,12 +82,12 @@ def load_librispeech_item(fileid: str,
     #time_alignment = Tensor(list(map(float, time_align[1:-1].split(","))))
 
     
-
+    tokenized_utterance = Tensor(tokenizer(utterance).input_ids).long()
     return (
         waveform.flatten(),
         len(waveform.flatten()), 
-        utterance, 
-        len(utterance)
+        tokenized_utterance, 
+        len(tokenized_utterance)
     )
 
 
@@ -141,7 +142,7 @@ class librispeech_dataset(Dataset):
 
         basename = basename.split(".")[0]
         folder_in_archive = os.path.join(folder_in_archive, basename)
-
+        self.tokenizer = RobertaTokenizerFast.from_pretrained('roberta-base')
         self._path = os.path.join(root, folder_in_archive)
 
         if download:
@@ -153,6 +154,9 @@ class librispeech_dataset(Dataset):
 
         self._walker = sorted(str(p.stem) for p in Path(self._path).glob('*/*/*' + self._ext_audio))
 
+    def load_librispeech_item(self, fileid,path,ext_audio,ext_txt):
+        return load_librispeech_item(self.tokenizer,fileid,path,ext_audio,ext_txt)
+    
     def __getitem__(self, n: int) -> Tuple[Tensor, int, str, int, int, int]:
         """Load the n-th sample from the dataset.
 
@@ -163,7 +167,7 @@ class librispeech_dataset(Dataset):
             tuple: ``(waveform, sample_rate, utterance, speaker_id, chapter_id, utterance_id)``
         """
         fileid = self._walker[n]
-        return load_librispeech_item(fileid, self._path, self._ext_audio, self._ext_txt)
+        return self.load_librispeech_item(fileid, self._path, self._ext_audio, self._ext_txt)
 
 
     def __len__(self) -> int:
